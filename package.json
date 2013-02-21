@@ -1,0 +1,27 @@
+{
+  "name": "ice",
+  "description": "Kondoot Interaction and Chat Environment",
+  "author": "Damon Oehlman <damon.oehlman@sidelab.com>",
+  "private": "true",
+  "tags": [ "chat", "interaction", "realtime" ],
+  "version": "0.0.0",
+  "engines": {
+    "node": ">= 0.8.x < 0.9.0"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "mocha": "1.8.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kondoot/ice.git"
+  },
+  "bugs": {
+    "url": "http://github.com/kondoot/ice/issues"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec -t 30s"
+  },
+  "contributors": []
+}
