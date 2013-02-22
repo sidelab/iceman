@@ -21,4 +21,12 @@ describe('ICE connection tests', function() {
             done();
         });
     });
+
+    it('should be able to send messages to the ice server', function(done) {
+        var client = sjsc.create('http://localhost:3090/ice');
+
+        client.on('connection', function() {
+            client.send(ice.text('hello'));
+        });
+    });
 })
