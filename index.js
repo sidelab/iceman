@@ -22,7 +22,7 @@ var uuid = require('uuid'),
 /* ice main */
 
 var ice = module.exports = function(text) {
-    return msgpack.encode(text).toString('base64');
+    return msgpack.encode(text);
 };
 
 ice.ack = function(message) {

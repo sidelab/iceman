@@ -2,7 +2,7 @@ var assert = require('assert'),
     ice = require('../'),
     msgpack = require('msgpack-js'),
     uuid = require('uuid'),
-    sjsc = require('sockjs-client'),
+    BinaryClient = require('binaryjs').BinaryClient,
     startServer = require('../lib/server'),
     server;
 
@@ -16,40 +16,38 @@ describe('ICE connection tests', function() {
     });
 
     it('should be able to connect to the ice server', function(done) {
-        var client = sjsc.create('http://localhost:3090/ice');
+        var client = new BinaryClient('ws://localhost:3090');
 
-        client.on('connection', function() {
+        client.on('open', function() {
             client.close();
             done();
         });
     });
 
     it('should be able to authenticate with the ice server', function(done) {
-        var client = sjsc.create('http://localhost:3090/ice'),
+        var client = new BinaryClient('ws://localhost:3090'),
             testId = uuid.v4();
 
         server.on('auth', function(interactor, data) {
             assert(data);
             assert.equal(data.uuid, testId);
 
-            // let the interactor now it is ok to go
-            interactor.authenticate();
+            // provide the interactor an identity
+            interactor.identify('Fred');
         });
 
-        client.on('connection', function() {
-            client.write(ice.session(testId));
+        client.on('open', function() {
+            client.send(ice.session(testId));
         });
 
-        /*
-        client.on('data', function(message) {
-            message = msgpack.decode(new Buffer(message, 'base64'));
+        client.on('stream', function(stream, meta) {
+            stream.on('data', function(data) {
+                var user = msgpack.decode(data);
 
-            assert(message);
-            assert(typeof message == 'object');
+                assert.equal(user.nick, 'Fred');
+            });
 
-            client.close();
-            done();
+            stream.on('end', done);
         });
-        */
     });
 })

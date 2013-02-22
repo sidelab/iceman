@@ -9,12 +9,10 @@
     "node": ">= 0.8.x < 0.9.0"
   },
   "dependencies": {
+    "binaryjs": "0.1.x",
     "debug": "*",
-    "ecstatic": "0.4.x",
-    "event-stream": "3.0.x",
     "lodash": "1.0.x",
     "msgpack-js": "0.1.x",
-    "shoe": "0.0.x",
     "uuid": "1.4.x"
   },
   "devDependencies": {
