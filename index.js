@@ -26,7 +26,13 @@ var ice = module.exports = function(text) {
 };
 
 ice.ack = function(message) {
-    return ice(new Buffer())
+    // initialise an ack command
+    var msg = ice.message('ack');
+
+    // write the command that is being acknowledged into the message
+    msg.writeUInt8(messageTypes[message], 1);
+
+    return ice(msg);
 };
 
 ice.decode = function(buffer) {

@@ -25,17 +25,19 @@ describe('ICE connection tests', function() {
     });
 
     it('should be able to authenticate with the ice server', function(done) {
-        var client = sjsc.create('http://localhost:3090/ice');
+        var client = sjsc.create('http://localhost:3090/ice'),
+            testId = uuid.v4();
 
-        server.on('authenticate', function(interactor, session) {
-            // TODO: assert session looks good
+        server.on('auth', function(interactor, data) {
+            assert(data);
+            assert.equal(data.uuid, testId);
 
             // let the interactor now it is ok to go
             interactor.authenticate();
         });
 
         client.on('connection', function() {
-            client.write(ice.session(uuid.v4()));
+            client.write(ice.session(testId));
         });
 
         /*
