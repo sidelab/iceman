@@ -1,7 +1,8 @@
 var debug = require('debug')('ice-client'),
     http = require('http'),
     url = require('url'),
-    InteractionStream = require('./lib/interaction-stream'),
+    es = require('event-stream'),
+    Interactor = require('./lib/interactor'),
     _ = require('lodash'),
 
     phaseData = {
@@ -16,16 +17,19 @@ var debug = require('debug')('ice-client'),
 
 function ice(host, opts) {
     var urlData = url.parse(host),
-        request, interaction;
+        request, interactor;
 
     // initialise the request, sending the connect data
     request = http.request(_.extend({}, phaseData.connect, urlData), function(res) {
         debug('connect: ' + host, res.statusCode);
         if (reStatusOK.test(res.statusCode)) {
-            interaction.pipe(res);
+            es.pipeline(
+                res,
+                interactor
+            );
         }
         else {
-            interaction.emit('error', new Error('unexpected response'));
+            interactor.emit('error', new Error('unexpected response'));
         }
     });
 
@@ -33,7 +37,7 @@ function ice(host, opts) {
     request.end();
 
     // create the interaction stream that will process the output from the server
-    return (interaction = new InteractionStream(urlData));
+    return (interactor = new Interactor(host));
 }
 
 module.exports = ice;

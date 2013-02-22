@@ -1,4 +1,6 @@
-var ice = require('../'),
+var assert = require('assert'),
+    ice = require('../'),
+    sjsc = require('sockjs-client'),
     startServer = require('../lib/server'),
     server;
 
@@ -7,17 +9,16 @@ describe('ICE connection tests', function() {
         server = startServer(done);
     });
 
-    after(function(done) {
-        server.close(done);
+    after(function() {
+        server.close();
     });
 
     it('should be able to connect to the ice server', function(done) {
-        var client = ice('http://localhost:3090');
+        var client = sjsc.create('http://localhost:3090/ice');
 
-        client.on('data', function(data) {
-            console.log(this, data);
+        client.on('connection', function() {
+            client.close();
+            done();
         });
-
-        client.on('error', done);
     });
 })

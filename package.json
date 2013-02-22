@@ -10,10 +10,14 @@
   },
   "dependencies": {
     "debug": "*",
+    "ecstatic": "0.4.x",
+    "event-stream": "3.0.x",
     "lodash": "1.0.x",
+    "shoe": "0.0.x",
     "uuid": "1.4.x"
   },
   "devDependencies": {
+    "sockjs-client": "0.1.x",
     "mocha": "1.8.x"
   },
   "repository": {
