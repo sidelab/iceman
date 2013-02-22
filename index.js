@@ -1,43 +1,77 @@
-var debug = require('debug')('ice-client'),
-    http = require('http'),
-    url = require('url'),
-    es = require('event-stream'),
-    Interactor = require('./lib/interactor'),
+var uuid = require('uuid'),
+    msgpack = require('msgpack-js'),
     _ = require('lodash'),
 
-    phaseData = {
-        connect: {
-            headers: {
-                'x-ice-at': 'connect'
-            }
-        }
+    SIZE_MSGTYPE = 1,
+
+    messageTypes = {
+        fail: 0x0,
+        ack:  0x1,
+        auth: 0x2
+    },
+    messageTypeNames = [];
+
+    messageSizes = {
+        fail: SIZE_MSGTYPE * 2,
+        ack:  SIZE_MSGTYPE * 2,
+        auth: SIZE_MSGTYPE + 16
     },
 
-    reStatusOK = /^2\d{2}$/;
+    deserializers = {};
 
-function ice(host, opts) {
-    var urlData = url.parse(host),
-        request, interactor;
+/* ice main */
 
-    // initialise the request, sending the connect data
-    request = http.request(_.extend({}, phaseData.connect, urlData), function(res) {
-        debug('connect: ' + host, res.statusCode);
-        if (reStatusOK.test(res.statusCode)) {
-            es.pipeline(
-                res,
-                interactor
-            );
-        }
-        else {
-            interactor.emit('error', new Error('unexpected response'));
-        }
-    });
+var ice = module.exports = function(text) {
+    return msgpack.encode(text).toString('base64');
+};
 
-    // finish sending the request
-    request.end();
+ice.ack = function(message) {
+    return ice(new Buffer())
+};
 
-    // create the interaction stream that will process the output from the server
-    return (interactor = new Interactor(host));
-}
+ice.decode = function(buffer) {
+    // read the low order by from the buffer and determine the type
+    var type = messageTypeNames[buffer.readUInt8(0)],
+        data = { type: type };
 
-module.exports = ice;
+    // if we have a deserializer for the message, then process
+    if (typeof deserializers[type] == 'function') {
+        _.extend(data, deserializers[type](buffer));
+    }
+
+    return data;
+};
+
+ice.message = function(type) {
+    var msg = new Buffer(messageSizes[type] || SIZE_MSGTYPE);
+
+    // write the message into the low byte of the buffer
+    msg.writeUInt8(messageTypes[type], 0);
+
+    // return the newly created message buffer
+    return msg;
+};
+
+ice.session = function(id) {
+    // create the message buffer
+    var msg = ice.message('auth');
+
+    // parse the uuid into the buffer
+    uuid.parse(id, msg, SIZE_MSGTYPE);
+
+    // return the message
+    return ice(msg);
+};
+
+/* initialization */
+
+// create the reverse lookup for message types
+Object.keys(messageTypes).forEach(function(typeName) {
+    messageTypeNames[messageTypes[typeName]] = typeName;
+});
+
+/* deserializers */
+
+deserializers.auth = function(buffer) {
+    return { uuid: uuid.unparse(buffer, SIZE_MSGTYPE) };
+};
