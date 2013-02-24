@@ -1,13 +1,10 @@
-# Kondoot ICE
+# Iceman - Interaction and Chat Environment Manager
 
-ICE is the new Interaction and Chat Environment that has been implemented as part of the new Kondoot site.  ICE is driven using [Server-Sent Events](http://www.w3.org/TR/eventsource/) and a simple RESTful API for pushing interactions back through the system.
+Iceman is a managed interaction and chat environment that is designed to scale to high concurrent chat usage.  The project was commissioned as part of the [Kondoot](http://kondoot.com) site refresh to replace an installation of [Openfire](http://www.igniterealtime.org/projects/openfire/).  As good as Openfire is, it was heavierweight than required and also required completely separate backend db, etc and thus didn't integrate as nicely as it could.
 
-While we primarily use [restify](https://github.com/mcavage/node-restify) for other node endpoints in the Kondoot stack, ICE has been built using [tako](https://github.com/mikeal/tako) due to it's excellent support for streaming interfaces.
+Iceman, however, has no authentication or RDMBS storage baked in.  Rather it has appropriate integration points for authentication and storage.  From an integration perspective, it does mean there is a little more to do to get it running, but integration will be far more seamless in the long run. 
 
-## Starting ICE
+## Further Information
 
-To be completed.
-
-## Testing ICE
-
-To be completed.
+- [Connection Handshake](https://github.com/DamonOehlman/iceman/wiki/Handshake)
+- [Messaging Format](https://github.com/DamonOehlman/iceman/wiki/Messaging)

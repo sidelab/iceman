@@ -1,4 +1,4 @@
-var server = require('./lib/server')();
+var server = require('./')();
 
 process.on('exit', function() {
     server.close();
