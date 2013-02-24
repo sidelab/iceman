@@ -72,13 +72,13 @@ function createRequestHandler(server, opts) {
         // add the route regex handlers
         handlers = handlers.concat(routes.map(function(route) {
             return function(callback) {
-                var routeMatch = route.regex.exec(req.url);
+                var match = route.regex.exec(req.url);
 
                 // if this is not a match, then immediately trigger the callback
-                if (! routeMatch) return callback();
+                if (! match) return callback();
 
                 // run the route handler
-                route.handler.call(null, server, req, res, callback);
+                route.handler.call(null, match, server, req, res, callback);
             };
         }));
 
