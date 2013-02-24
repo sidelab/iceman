@@ -10,47 +10,15 @@ var async = require('async'),
         return require('./lib/plugins/' + plugin);
     }),
 
+    // include the route handlers
+    routes = ['connect'].map(function(handler) {
+        return require('./lib/routes/' + handler);
+    }),
+
     // initialise the default transports
     defaultTransports = {
         sockjs: {}
-    },
-
-    reConnectUrl = /\/+connect\/?(.*)$/i;
-
-
-function createRequestHandler(server, opts) {
-    opts = opts || {};
-
-    // initialise all the plugins
-    opts.plugins = basePlugins.concat(opts.plugins || []);
-
-    return function(req, res) {
-        // initialise the plugin handlers
-        var pluginHandlers = opts.plugins.map(function(plugin) {
-            return plugin.bind(null, req, res);
-        });
-
-        // run the plugins in series
-        // TODO: consider parallel
-        async.series(pluginHandlers, function(err) {
-            // route requests
-            switch (true) {
-                case reConnectUrl.test(req.url): {
-                    // if we have no auth handlers on the server, then return a 401
-                    if (server.listeners('auth').length === 0) {
-                        res.writeHead(401);
-                        return res.end('Unable to authenticate user');
-                    }
-
-                    console.log('connecting');
-                }
-            }
-
-
-            console.log(req.url);
-        });
     };
-}
 
 /**
 */
@@ -86,3 +54,39 @@ module.exports = function(opts, callback) {
 
     return server;
 };
+
+/* internal helpers */
+
+function createRequestHandler(server, opts) {
+    opts = opts || {};
+
+    // initialise all the plugins
+    opts.plugins = basePlugins.concat(opts.plugins || []);
+
+    return function(req, res) {
+        // initialise the plugin handlers
+        var handlers = opts.plugins.map(function(plugin) {
+            return plugin.bind(null, req, res);
+        });
+
+        // add the route regex handlers
+        handlers = handlers.concat(routes.map(function(route) {
+            return function(callback) {
+                var routeMatch = route.regex.exec(req.url);
+
+                // if this is not a match, then immediately trigger the callback
+                if (! routeMatch) return callback();
+
+                // run the route handler
+                route.handler.call(null, server, req, res, callback);
+            };
+        }));
+
+        // run the plugins in series
+        // TODO: consider parallel
+        async.series(handlers, function(err) {
+
+            console.log(req.url);
+        });
+    };
+}

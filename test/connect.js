@@ -20,4 +20,15 @@ describe('iceman connection handshake', function() {
             .expect(401)
             .end(done);
     });
+
+    it('should return a 500 response when authentication fails', function(done) {
+        server.once('auth', function(req, res, callback) {
+            callback(new Error('unable to authenticate'));
+        });
+
+        request(app)
+            .get('/connect/' + roomId)
+            .expect(500)
+            .end(done);
+    });
 });
