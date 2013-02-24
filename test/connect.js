@@ -14,7 +14,7 @@ describe('iceman connection handshake', function() {
         server.close();
     });
 
-    it('should be able to make a room request', function(done) {
+    it('should return a 401 response when no auth handlers are connected', function(done) {
         request(app)
             .get('/connect/' + roomId)
             .expect(401)

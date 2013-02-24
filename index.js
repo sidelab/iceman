@@ -13,10 +13,12 @@ var async = require('async'),
     // initialise the default transports
     defaultTransports = {
         sockjs: {}
-    };
+    },
+
+    reConnectUrl = /\/+connect\/?(.*)$/i;
 
 
-function handshaker(opts) {
+function createRequestHandler(server, opts) {
     opts = opts || {};
 
     // initialise all the plugins
@@ -31,6 +33,20 @@ function handshaker(opts) {
         // run the plugins in series
         // TODO: consider parallel
         async.series(pluginHandlers, function(err) {
+            // route requests
+            switch (true) {
+                case reConnectUrl.test(req.url): {
+                    // if we have no auth handlers on the server, then return a 401
+                    if (server.listeners('auth').length === 0) {
+                        res.writeHead(401);
+                        return res.end('Unable to authenticate user');
+                    }
+
+                    console.log('connecting');
+                }
+            }
+
+
             console.log(req.url);
         });
     };
@@ -57,7 +73,8 @@ module.exports = function(opts, callback) {
 
     // create the server
     debug('initializing ice server on port: ' + opts.port);
-    server = require(opts.https ? 'https' : 'http').createServer(handshaker(opts));
+    server = require(opts.https ? 'https' : 'http').createServer();
+    server.on('request', createRequestHandler(server, opts));
 
     // iterate through the transports
     _.each(opts.transports, function(config, transport) {
