@@ -23,7 +23,7 @@ var async = require('async'),
 /**
 */
 module.exports = function(opts, callback) {
-    var server, transports = [];
+    var server, transports = [], initializers;
 
     if (typeof opts == 'function') {
         callback = opts;
@@ -44,13 +44,34 @@ module.exports = function(opts, callback) {
     server = require(opts.https ? 'https' : 'http').createServer();
     server.on('request', createRequestHandler(server, opts));
 
+    // initialise the storage engine
+    server.storage = opts.storage || require('./lib/storage-memory');
+
+    // initialise the server clients array
+    server.clients = [];
+
     // iterate through the transports
     _.each(opts.transports, function(config, transport) {
         transports.push(require('./lib/transports/' + transport)(server, config));
     });
 
-    // run the server
-    server.listen(opts.port, callback);
+    // create the initializers list
+    initializers = [].map(function(taskModule) {
+        return require('./lib/' + taskModule).init.bind(null, server);
+    });
+
+    // if the server storage has an init function, then add it to the initializers
+    if (server.storage && typeof server.storage.init == 'function') {
+        initializers.push(server.storage.init.bind(server.storage, server));
+    }
+
+    // run the initialization tasks and then get the server running
+    async.parallel(initializers, function(err) {
+        if (err) return callback(err);
+
+        // run the server
+        server.listen(opts.port, callback);
+    });
 
     return server;
 };

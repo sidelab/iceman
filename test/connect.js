@@ -1,8 +1,12 @@
-var request = require('supertest'),
+var assert = require('assert'),
+    sjsc = require('sockjs-client'),
+    request = require('supertest'),
     app = 'http://localhost:3090',
     iceman = require('../'),
     uuid = require('uuid'),
     roomId = uuid.v4(),
+    reError = /^R\:(\d+).*/,
+    roomToken,
     server;
 
 describe('iceman connection handshake', function() {
@@ -51,6 +55,45 @@ describe('iceman connection handshake', function() {
         request(app)
             .get('/connect/' + roomId)
             .expect(200)
-            .end(done);
+            .end(function(err, response) {
+                assert.ifError(err);
+                assert.equal(response.headers['content-type'], 'application/json');
+                assert(response.body.token, 'No token found in the connect response');
+
+                // save the room token
+                roomToken = response.body.token;
+
+                done();
+            });
     });
+
+    it('should be able to connect via sockjs to the server', function(done) {
+        sjsc.create(app + '/room').on('connection', done);
+    });
+
+    it('should not be able to post messages prior to authenticating with the token', function(done) {
+        var client = sjsc.create(app + '/room');
+
+        client.once('data', function(msg) {
+            assert(reError.test(msg), 'Did not receive an error message from the client');
+            assert.equal(RegExp.$1, 401, 'Did not receive a 401 error');
+
+            done();
+        });
+
+        client.on('connection', function() {
+            client.write('T:hi');
+        });
+    });
+
+    /*
+
+    it('should be able to authne to the room using the room token', function(done) {
+        var client = sjsc.create(app + '/room');
+
+        client.on('connection', function() {
+            done();
+        });
+    });
+*/
 });

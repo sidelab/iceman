@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "debug": "*",
+    "levelup": "0.5.x",
+    "level-scuttlebutt": "4.2.x",
     "lodash": "1.0.x",
     "msgpack-js": "0.1.x",
+    "scuttlebutt": "5.5.x",
     "sockjs": "0.3.x",
     "uuid": "1.4.x"
   },
