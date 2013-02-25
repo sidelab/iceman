@@ -100,4 +100,30 @@ describe('iceman connection handshake', function() {
             client.write('A:' + roomToken);
         });
     });
+
+    it('should be able to send messages once authenticated', function(done) {
+        var client = sjsc.create(app + '/room'),
+            responseCount = 0;
+
+        client.on('data', function(msg) {
+            // increment the responsecount
+            responseCount += 1;
+
+            // test the response is ok
+            assert(reReponse.test(msg), 'Did not receive a repponse from the server');
+            assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+
+            // if we've had two responses we are done
+            if (responseCount >= 2) {
+                done();
+            }
+            else {
+                client.write('T:hi there');
+            }
+        });
+
+        client.on('connection', function() {
+            client.write('A:' + roomToken);
+        });
+    });
 });
