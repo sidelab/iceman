@@ -5,7 +5,7 @@ var assert = require('assert'),
     iceman = require('../'),
     uuid = require('uuid'),
     roomId = uuid.v4(),
-    reError = /^R\:(\d+).*/,
+    reReponse = /^R\:(\d+).*/,
     roomToken,
     server;
 
@@ -75,7 +75,7 @@ describe('iceman connection handshake', function() {
         var client = sjsc.create(app + '/room');
 
         client.once('data', function(msg) {
-            assert(reError.test(msg), 'Did not receive an error message from the client');
+            assert(reReponse.test(msg), 'Did not receive a response from the server');
             assert.equal(RegExp.$1, 401, 'Did not receive a 401 error');
 
             done();
@@ -86,14 +86,18 @@ describe('iceman connection handshake', function() {
         });
     });
 
-    /*
-
-    it('should be able to authne to the room using the room token', function(done) {
+    it('should be able to auth to the room using the room token', function(done) {
         var client = sjsc.create(app + '/room');
 
-        client.on('connection', function() {
+        client.once('data', function(msg) {
+            assert(reReponse.test(msg), 'Did not receive a repponse from the server');
+            assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+
             done();
         });
+
+        client.on('connection', function() {
+            client.write('A:' + roomToken);
+        });
     });
-*/
 });

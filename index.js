@@ -22,7 +22,7 @@ var async = require('async'),
 
 /**
 */
-module.exports = function(opts, callback) {
+var iceman = module.exports = function(opts, callback) {
     var server, transports = [], initializers;
 
     if (typeof opts == 'function') {
@@ -75,6 +75,9 @@ module.exports = function(opts, callback) {
 
     return server;
 };
+
+// bind the errors into the export
+iceman.errors = require('./lib/errors');
 
 /* internal helpers */
 
