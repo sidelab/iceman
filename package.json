@@ -1,20 +1,17 @@
 {
-  "name": "ice",
-  "description": "Kondoot Interaction and Chat Environment",
+  "name": "iceman",
+  "description": "Node Interaction and Chat Manager",
   "author": "Damon Oehlman <damon.oehlman@sidelab.com>",
-  "private": "true",
   "tags": [ "chat", "interaction", "realtime" ],
   "version": "0.0.0",
   "engines": {
     "node": ">= 0.8.x < 0.9.0"
   },
   "dependencies": {
+    "async": "0.2.x",
     "debug": "*",
-    "levelup": "0.5.x",
-    "level-scuttlebutt": "4.2.x",
     "lodash": "1.0.x",
     "msgpack-js": "0.1.x",
-    "scuttlebutt": "5.5.x",
     "sockjs": "0.3.x",
     "uuid": "1.4.x"
   },
@@ -25,10 +22,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/kondoot/ice.git"
+    "url": "git://github.com/DamonOehlman/iceman.git"
   },
   "bugs": {
-    "url": "http://github.com/kondoot/ice/issues"
+    "url": "http://github.com/DamonOehlman/iceman/issues"
   },
   "scripts": {
     "test": "./node_modules/.bin/mocha --reporter spec -t 30s"
