@@ -34,7 +34,7 @@ describe('iceman connection handshake', function() {
             .get('/connect/' + roomId)
             .expect(500)
             .end(done);
-        });
+    });
 
     it('should return a 401 response when authentication fails', function(done) {
         server.once('auth', function(req, res, callback) {
@@ -110,7 +110,7 @@ describe('iceman connection handshake', function() {
             responseCount += 1;
 
             // test the response is ok
-            assert(reReponse.test(msg), 'Did not receive a repponse from the server');
+            assert(reReponse.test(msg), 'Did not receive a response from the server');
             assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
 
             // if we've had two responses we are done
