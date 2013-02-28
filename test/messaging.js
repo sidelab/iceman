@@ -5,10 +5,17 @@ var assert = require('assert'),
     createClient = require('./helpers/create-client'),
     app = 'http://localhost:3090',
     uuid = require('uuid'),
+    _ = require('lodash'),
     roomId = uuid.v4(),
+    reLeadingDigit = /^(\d+)/,
+    reSayHi = /^(\d+)T\:hi$/,
     roomToken,
     clients,
     server;
+
+function getClientId(msg) {
+    return reLeadingDigit.test(msg) && RegExp.$1;
+}
 
 describe('iceman connection handshake', function() {
     before(function(done) {
@@ -17,7 +24,7 @@ describe('iceman connection handshake', function() {
 
             // create two clients
             async.times(2, createClient.bind(null, roomId), function(err, results) {
-                clients = results || [];
+                clients = [].concat(results);
                 done(err);
             });
         });
@@ -28,21 +35,42 @@ describe('iceman connection handshake', function() {
     });
 
     it('should be able to send a message from client 1', function(done) {
-        server.getRoom(roomId).once('message', function(msg, client) {
-            assert.equal(msg, 'T:hi from 1');
-            assert.equal(client, clients[0]);
+        server.getRoom(roomId).stream.once('data', function(msg, client) {
+            assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+
             done();
         });
 
-        clients[0].write('T:hi from 1');
+        clients[0].write('T:hi');
     });
 
     it('should be able to send a message from client 2', function(done) {
-        server.getRoom(roomId).once('message', function(msg, client) {
-            assert.equal(msg, 'T:hi from 2');
-            assert.equal(client, clients[1]);
+        server.getRoom(roomId).stream.once('data', function(msg, client) {
+            assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+
+            done();
         });
 
-        clients[1].write('T:hi from 2');
+        clients[1].write('T:hi');
+    });
+
+    it('should be able to send a message from client 1 to client 2', function(done) {
+        clients[1].once('data', function(msg) {
+            assert(msg, 'No message received');
+            assert(reSayHi.test(msg), 'My buddy did not say hi');
+            done();
+        });
+
+        clients[0].write('T:hi');
+    });
+
+    it('should be able to send a message from client 2 to client 1', function(done) {
+        clients[0].once('data', function(msg) {
+            assert(msg, 'No message received');
+            assert(reSayHi.test(msg), 'My buddy did not say hi');
+            done();
+        });
+
+        clients[1].write('T:hi');
     });
 });

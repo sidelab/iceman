@@ -46,6 +46,7 @@ var iceman = module.exports = function(opts, callback) {
 
     // initialise the storage engine
     server.storage = opts.storage || require('./lib/storage-memory');
+    server.getRoom = server.storage.getRoom.bind(server.storage);
 
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
