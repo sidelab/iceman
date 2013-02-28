@@ -17,7 +17,7 @@ function getClientId(msg) {
     return reLeadingDigit.test(msg) && RegExp.$1;
 }
 
-describe('iceman connection handshake', function() {
+describe('iceman messaging', function() {
     before(function(done) {
         server = simpleServer(function(err) {
             if (err) return done(err);
