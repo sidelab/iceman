@@ -54,6 +54,12 @@ var iceman = module.exports = function(opts, callback) {
     // initialise the server clients array
     server.clients = [];
 
+    // create the additional handlers array
+    server._handlers = basePlugins.concat(opts.plugins || []);
+    server.use = function(handler) {
+        server._handlers.push(handler);
+    };
+
     // iterate through the transports
     _.each(opts.transports, function(config, transport) {
         transports.push(require('./lib/transports/' + transport)(server, config));
@@ -88,12 +94,9 @@ iceman.errors = require('./lib/errors');
 function createRequestHandler(server, opts) {
     opts = opts || {};
 
-    // initialise all the plugins
-    opts.plugins = basePlugins.concat(opts.plugins || []);
-
     return function(req, res) {
         // initialise the plugin handlers
-        var handlers = opts.plugins.map(function(plugin) {
+        var handlers = server._handlers.map(function(plugin) {
             return plugin.bind(null, req, res);
         });
 
@@ -111,10 +114,7 @@ function createRequestHandler(server, opts) {
         }));
 
         // run the plugins in series
-        // TODO: consider parallel
         async.series(handlers, function(err) {
-
-            console.log(req.url);
         });
     };
 }
