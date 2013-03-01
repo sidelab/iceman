@@ -31,6 +31,10 @@ describe('iceman messaging', function() {
     });
 
     after(function() {
+        clients.forEach(function(client) {
+            client.close();
+        });
+        
         server.close();
     });
 

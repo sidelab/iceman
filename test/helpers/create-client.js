@@ -3,7 +3,7 @@ var assert = require('assert'),
     sjsc = require('sockjs-client'),
     request = require('supertest'),
     app = 'http://localhost:3090',
-    reReponse = /^R\:(\d+).*/;
+    reResponse = /^R\:(\d+).*/;
 
 module.exports = function(roomId, index, callback) {
     var client;
@@ -22,13 +22,13 @@ module.exports = function(roomId, index, callback) {
             client = sjsc.create(app + '/room');
 
             // handle data
-            client.once('data', function(msg) {
-                // test the response is ok
-                assert(reReponse.test(msg), 'Did not receive a response from the server');
-                assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+            client.on('data', function handleResponse(msg) {
+                if (reResponse.test(msg)) {
+                    assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+                    client.removeListener('data', handleResponse);
 
-                // return the client
-                callback(null, client);
+                    callback(null, client);
+                }
             });
 
             client.on('connection', function() {

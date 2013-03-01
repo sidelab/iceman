@@ -5,7 +5,8 @@ var assert = require('assert'),
     iceman = require('../'),
     uuid = require('uuid'),
     roomId = uuid.v4(),
-    reReponse = /^R\:(\d+).*/,
+    reResponse = /^R\:(\d+)\|?(.*)/,
+    reEvent = /^E\:/,
     roomToken,
     server;
 
@@ -75,9 +76,11 @@ describe('iceman connection handshake', function() {
         var client = sjsc.create(app + '/room');
 
         client.once('data', function(msg) {
-            assert(reReponse.test(msg), 'Did not receive a response from the server');
+            assert(reResponse.test(msg), 'Did not receive a response from the server');
             assert.equal(RegExp.$1, 401, 'Did not receive a 401 error');
+            assert(typeof parseInt(RegExp.$2, 10) == 'number', 'Did not receive a connection id once connected');
 
+            client.close();
             done();
         });
 
@@ -89,11 +92,31 @@ describe('iceman connection handshake', function() {
     it('should be able to auth to the room using the room token', function(done) {
         var client = sjsc.create(app + '/room');
 
-        client.once('data', function(msg) {
-            assert(reReponse.test(msg), 'Did not receive a repponse from the server');
-            assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+        client.on('data', function handleResponse(msg) {
+            if (reResponse.test(msg)) {
+                assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
 
-            done();
+                client.removeListener('done', handleResponse);
+                client.close();
+                done();
+            }
+        });
+
+        client.on('connection', function() {
+            client.write('A:' + roomToken);
+        });
+    });
+
+    it('should be able to get a user.enter event from the server', function(done) {
+        var client = sjsc.create(app + '/room'),
+            stream = server.getRoom(roomId).stream;
+
+        stream.on('data', function handleMessages(msg) {
+            if (reEvent.test(msg)) {
+                stream.removeListener('data', handleMessages);
+                client.close();
+                done();
+            }
         });
 
         client.on('connection', function() {
@@ -105,21 +128,26 @@ describe('iceman connection handshake', function() {
         var client = sjsc.create(app + '/room'),
             responseCount = 0;
 
-        client.on('data', function(msg) {
-            // increment the responsecount
-            responseCount += 1;
+        client.on('data', function handleResponse(msg) {
+            if (reResponse.test(msg)) {
+                // increment the responsecount
+                responseCount += 1;
 
-            // test the response is ok
-            assert(reReponse.test(msg), 'Did not receive a response from the server');
-            assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+                // test the response is ok
+                assert(reResponse.test(msg), 'Did not receive a response from the server');
+                assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
 
-            // if we've had two responses we are done
-            if (responseCount >= 2) {
-                done();
+                // if we've had two responses we are done
+                if (responseCount >= 2) {
+                    client.removeListener('done', handleResponse);
+                    client.close();
+                    done();
+                }
+                else {
+                    client.write('T:hi there');
+                }
             }
-            else {
-                client.write('T:hi there');
-            }
+
         });
 
         client.on('connection', function() {
