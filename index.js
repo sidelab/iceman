@@ -51,9 +51,6 @@ var iceman = module.exports = function(opts, callback) {
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
 
-    // initialise the server clients array
-    server.clients = [];
-
     // create the additional handlers array
     server._handlers = basePlugins.concat(opts.plugins || []);
     server.use = function(handler) {

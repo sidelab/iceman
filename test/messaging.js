@@ -59,20 +59,24 @@ describe('iceman messaging', function() {
     });
 
     it('should be able to send a message from client 1 to client 2', function(done) {
-        clients[1].once('data', function(msg) {
-            assert(msg, 'No message received');
-            assert(reSayHi.test(msg), 'My buddy did not say hi');
-            done();
+        clients[1].on('data', function handleData(msg) {
+            console.log(msg);
+            if (reSayHi.test(msg)) {
+                clients[1].removeListener('data', handleData);
+                done();
+            }
         });
 
         clients[0].write('T:hi');
     });
 
     it('should be able to send a message from client 2 to client 1', function(done) {
-        clients[0].once('data', function(msg) {
-            assert(msg, 'No message received');
-            assert(reSayHi.test(msg), 'My buddy did not say hi');
-            done();
+        clients[0].on('data', function handleData(msg) {
+            console.log(msg);
+            if (reSayHi.test(msg)) {
+                clients[1].removeListener('data', handleData);
+                done();
+            }
         });
 
         clients[1].write('T:hi');

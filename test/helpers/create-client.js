@@ -3,10 +3,16 @@ var assert = require('assert'),
     sjsc = require('sockjs-client'),
     request = require('supertest'),
     app = 'http://localhost:3090',
-    reResponse = /^R\:(\d+).*/;
+    reResponse = /^R\:(\d+)\|?(.*)/;
 
 module.exports = function(roomId, index, callback) {
     var client;
+
+    // handle the two argument case
+    if (typeof index == 'function') {
+        callback = index;
+        index = 0;
+    }
 
     debug('creating client: connecting to: ' + app + '/connect/' + roomId);
 
@@ -25,7 +31,9 @@ module.exports = function(roomId, index, callback) {
             client.on('data', function handleResponse(msg) {
                 if (reResponse.test(msg)) {
                     assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
+
                     client.removeListener('data', handleResponse);
+                    client.id = parseInt(RegExp.$2, 10);
 
                     callback(null, client);
                 }
