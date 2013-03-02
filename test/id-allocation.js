@@ -10,7 +10,7 @@ var assert = require('assert'),
     clients = [],
     server;
 
-describe('iceman messaging', function() {
+describe('id allocation', function() {
     before(function(done) {
         server = simpleServer(done);
     });
@@ -18,7 +18,7 @@ describe('iceman messaging', function() {
     after(function() {
         // close any open clients
         clients.forEach(function(client) {
-            if (client.isOpen) client.close();
+            client.close();
         });
 
         server.close();

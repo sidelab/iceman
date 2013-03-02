@@ -45,8 +45,7 @@ var iceman = module.exports = function(opts, callback) {
     server.on('request', createRequestHandler(server, opts));
 
     // initialise the storage engine
-    server.storage = opts.storage || require('./lib/storage-memory');
-    server.getRoom = server.storage.getRoom.bind(server.storage);
+    server.storage = opts.storage || require('./lib/stores/memory');
 
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
@@ -64,12 +63,14 @@ var iceman = module.exports = function(opts, callback) {
 
     // create the initializers list
     initializers = [].map(function(taskModule) {
-        return require('./lib/' + taskModule).init.bind(null, server);
+        return require('./lib/' + taskModule).init.bind(null, server, opts);
     });
 
     // if the server storage has an init function, then add it to the initializers
-    if (server.storage && typeof server.storage.init == 'function') {
-        initializers.push(server.storage.init.bind(server.storage, server));
+    if (server.storage && typeof server.storage == 'function') {
+        initializers.push(function(callback) {
+            server.storage = server.storage(server, opts, callback);
+        });
     }
 
     // run the initialization tasks and then get the server running

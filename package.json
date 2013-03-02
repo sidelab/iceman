@@ -33,7 +33,7 @@
     "url": "http://github.com/DamonOehlman/iceman/issues"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha --reporter spec -t 30s"
+    "test": "./node_modules/.bin/mocha --reporter spec -t 2s"
   },
   "contributors": []
 }
