@@ -1,7 +1,6 @@
 var async = require('async'),
     debug = require('debug')('iceman-server'),
     path = require('path'),
-    interactor = require('./lib/interactor'),
     http = require('http'),
     _ = require('lodash'),
 
