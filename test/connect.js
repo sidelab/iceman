@@ -107,23 +107,6 @@ describe('iceman connection handshake', function() {
         });
     });
 
-    it('should be able to get a user.enter event from the server', function(done) {
-        var client = sjsc.create(app + '/room'),
-            stream = server.getRoom(roomId).stream;
-
-        stream.on('data', function handleMessages(msg) {
-            if (reEvent.test(msg)) {
-                stream.removeListener('data', handleMessages);
-                client.close();
-                done();
-            }
-        });
-
-        client.on('connection', function() {
-            client.write('A:' + roomToken);
-        });
-    });
-
     it('should be able to send messages once authenticated', function(done) {
         var client = sjsc.create(app + '/room'),
             responseCount = 0;
