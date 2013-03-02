@@ -3,7 +3,7 @@ var assert = require('assert'),
     request = require('supertest'),
     app = 'http://localhost:3090',
     iceman = require('../'),
-    uuid = require('uuid'),
+    uuid = require('node-uuid'),
     roomId = uuid.v4(),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:(.*)$/,
@@ -40,50 +40,62 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.enter event from the server', function(done) {
-        var client = sjsc.create(app + '/room'),
-            stream = server.getRoom(roomId).stream;
+        var client;
 
-        stream.on('data', function handleMessages(msg) {
-            if (reEvent.test(msg) && RegExp.$1.split('|')[0] === 'user.enter') {
-                stream.removeListener('data', handleMessages);
-                client.close();
-                done();
-            }
-        });
+        server.storage.findRoom(roomId, function(err, room) {
+            var stream = (room || {}).stream;
 
-        client.on('connection', function() {
-            client.write('A:' + roomToken);
+            if (err) return done(err);
+
+            stream.on('data', function handleMessages(msg) {
+                if (reEvent.test(msg) && RegExp.$1.split('|')[0] === 'user.enter') {
+                    stream.removeListener('data', handleMessages);
+                    client.close();
+                    done();
+                }
+            });
+
+            client = sjsc.create(app + '/room');
+            client.on('connection', function() {
+                client.write('A:' + roomToken);
+            });
         });
     });
 
     it('should be able to get a user.exit event from the server on connection close', function(done) {
-        var client = sjsc.create(app + '/room'),
-            stream = server.getRoom(roomId).stream;
+        var client;
 
-        stream.on('data', function handleMessages(msg) {
-            var msgType;
+        server.storage.findRoom(roomId, function(err, room) {
+            var stream = (room || {}).stream;
 
-            if (reEvent.test(msg)) {
-                msgType = RegExp.$1.split('|')[0];
+            if (err) return done(err);
 
-                switch (msgType) {
-                    case 'user.enter': {
-                        client.close();
-                        break;
-                    }
+            stream.on('data', function handleMessages(msg) {
+                var msgType;
 
-                    case 'user.exit': {
-                        stream.removeListener('data', handleMessages);
-                        done();
+                if (reEvent.test(msg)) {
+                    msgType = RegExp.$1.split('|')[0];
 
-                        break;
+                    switch (msgType) {
+                        case 'user.enter': {
+                            client.close();
+                            break;
+                        }
+
+                        case 'user.exit': {
+                            stream.removeListener('data', handleMessages);
+                            done();
+
+                            break;
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        client.on('connection', function() {
-            client.write('A:' + roomToken);
+            client = sjsc.create(app + '/room');
+            client.on('connection', function() {
+                client.write('A:' + roomToken);
+            });
         });
     });
 });

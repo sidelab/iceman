@@ -4,7 +4,7 @@ var assert = require('assert'),
     simpleServer = require('./helpers/simple-server'),
     createClient = require('./helpers/create-client'),
     app = 'http://localhost:3090',
-    uuid = require('uuid'),
+    uuid = require('node-uuid'),
     _ = require('lodash'),
     roomId = uuid.v4(),
     reLeadingDigit = /^(\d+)/,
@@ -39,23 +39,31 @@ describe('iceman messaging', function() {
     });
 
     it('should be able to send a message from client 1', function(done) {
-        server.getRoom(roomId).stream.once('data', function(msg, client) {
-            assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+        server.storage.findRoom(roomId, function(err, room) {
+            if (err) return done(err);
 
-            done();
+            room.stream.once('data', function(msg, client) {
+                assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+
+                done();
+            });
+
+            clients[0].write('T:hi');
         });
-
-        clients[0].write('T:hi');
     });
 
     it('should be able to send a message from client 2', function(done) {
-        server.getRoom(roomId).stream.once('data', function(msg, client) {
-            assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+        server.storage.findRoom(roomId, function(err, room) {
+            if (err) return done(err);
 
-            done();
+            room.stream.once('data', function(msg, client) {
+                assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+
+                done();
+            });
+
+            clients[1].write('T:hi');
         });
-
-        clients[1].write('T:hi');
     });
 
     it('should be able to send a message from client 1 to client 2', function(done) {

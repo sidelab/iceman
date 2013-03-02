@@ -67,16 +67,13 @@ var iceman = module.exports = function(opts, callback) {
         return require('./lib/' + taskModule).init.bind(null, server, opts);
     });
 
-    // if the server storage has an init function, then add it to the initializers
-    if (server.storage && typeof server.storage == 'function') {
-        initializers.push(function(callback) {
-            storageInitializer(server, opts, function(err, storage) {
-                if (err) return callback(err);
-
-                server.storage = storage;
-            });
+    // add the storage initialization to the initialization tasks
+    initializers.push(function(callback) {
+        storageInitializer(server, opts, function(err, storage) {
+            server.storage = storage;
+            callback.apply(this, arguments);
         });
-    }
+    });
 
     // run the initialization tasks and then get the server running
     async.parallel(initializers, function(err) {
