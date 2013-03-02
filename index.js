@@ -23,7 +23,8 @@ var async = require('async'),
 /**
 */
 var iceman = module.exports = function(opts, callback) {
-    var server, transports = [], initializers;
+    var server, transports = [], initializers,
+        storageInitializer;
 
     if (typeof opts == 'function') {
         callback = opts;
@@ -39,13 +40,13 @@ var iceman = module.exports = function(opts, callback) {
     // initialise the transports
     opts.transports = opts.transports || defaultTransports;
 
+    // create the storage initializer
+    storageInitializer = opts.storage || require('./lib/stores/memory');
+
     // create the server
     debug('initializing ice server on port: ' + opts.port);
     server = require(opts.https ? 'https' : 'http').createServer();
     server.on('request', createRequestHandler(server, opts));
-
-    // initialise the storage engine
-    server.storage = opts.storage || require('./lib/stores/memory');
 
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
@@ -69,7 +70,11 @@ var iceman = module.exports = function(opts, callback) {
     // if the server storage has an init function, then add it to the initializers
     if (server.storage && typeof server.storage == 'function') {
         initializers.push(function(callback) {
-            server.storage = server.storage(server, opts, callback);
+            storageInitializer(server, opts, function(err, storage) {
+                if (err) return callback(err);
+
+                server.storage = storage;
+            });
         });
     }
 
