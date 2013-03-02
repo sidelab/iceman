@@ -8,15 +8,17 @@ var assert = require('assert'),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:(.*)$/,
     roomToken,
-    server;
+    server,
+    client;
 
 describe('iceman events', function() {
     before(function(done) {
         server = iceman(done);
     });
 
-    after(function() {
+    after(function(done) {
         server.close();
+        process.nextTick(done);
     });
 
     it('should return a 200 response when a user is provided', function(done) {
@@ -40,8 +42,6 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.enter event from the server', function(done) {
-        var client;
-
         server.storage.findRoom(roomId, function(err, room) {
             var stream = (room || {}).stream;
 
@@ -50,7 +50,6 @@ describe('iceman events', function() {
             stream.on('data', function handleMessages(msg) {
                 if (reEvent.test(msg) && RegExp.$1.split('|')[0] === 'user.enter') {
                     stream.removeListener('data', handleMessages);
-                    client.close();
                     done();
                 }
             });
@@ -63,39 +62,20 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.exit event from the server on connection close', function(done) {
-        var client;
-
         server.storage.findRoom(roomId, function(err, room) {
             var stream = (room || {}).stream;
 
             if (err) return done(err);
 
             stream.on('data', function handleMessages(msg) {
-                var msgType;
-
                 if (reEvent.test(msg)) {
-                    msgType = RegExp.$1.split('|')[0];
-
-                    switch (msgType) {
-                        case 'user.enter': {
-                            client.close();
-                            break;
-                        }
-
-                        case 'user.exit': {
-                            stream.removeListener('data', handleMessages);
-                            done();
-
-                            break;
-                        }
-                    }
+                    assert.equal(RegExp.$1.split('|')[0], 'user.exit');
+                    stream.removeListener('data', handleMessages);
+                    done();
                 }
             });
 
-            client = sjsc.create(app + '/room');
-            client.on('connection', function() {
-                client.write('A:' + roomToken);
-            });
+            process.nextTick(client.close.bind(client));
         });
     });
 });

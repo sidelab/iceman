@@ -15,13 +15,14 @@ describe('id allocation', function() {
         server = simpleServer(done);
     });
 
-    after(function() {
+    after(function(done) {
         // close any open clients
         clients.forEach(function(client) {
             client.close();
         });
 
         server.close();
+        process.nextTick(done);
     });
 
     it('should allocate id 0 to the first client', function(done) {

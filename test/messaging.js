@@ -30,12 +30,13 @@ describe('iceman messaging', function() {
         });
     });
 
-    after(function() {
+    after(function(done) {
         clients.forEach(function(client) {
             client.close();
         });
         
         server.close();
+        process.nextTick(done);
     });
 
     it('should be able to send a message from client 1', function(done) {

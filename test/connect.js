@@ -9,15 +9,17 @@ var assert = require('assert'),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:/,
     roomToken,
-    server;
+    server,
+    client;
 
 describe('iceman connection handshake', function() {
     before(function(done) {
         server = iceman(done);
     });
 
-    after(function() {
+    after(function(done) {
         server.close();
+        process.nextTick(done);
     });
 
     it('should return a 401 response when no auth handlers are connected', function(done) {
@@ -74,7 +76,7 @@ describe('iceman connection handshake', function() {
     });
 
     it('should not be able to post messages prior to authenticating with the token', function(done) {
-        var client = sjsc.create(app + '/room');
+        client = sjsc.create(app + '/room');
 
         client.once('data', function(msg) {
             assert(reResponse.test(msg), 'Did not receive a response from the server');
@@ -91,14 +93,13 @@ describe('iceman connection handshake', function() {
     });
 
     it('should be able to auth to the room using the room token', function(done) {
-        var client = sjsc.create(app + '/room');
+        client = sjsc.create(app + '/room');
 
-        client.on('data', function handleResponse(msg) {
+        client.on('data', function(msg) {
             if (reResponse.test(msg)) {
                 assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
 
-                client.removeListener('done', handleResponse);
-                client.close();
+                client.removeAllListeners('data');
                 done();
             }
         });
@@ -109,8 +110,7 @@ describe('iceman connection handshake', function() {
     });
 
     it('should be able to send messages once authenticated', function(done) {
-        var client = sjsc.create(app + '/room'),
-            responseCount = 0;
+        var responseCount = 0;
 
         client.on('data', function handleResponse(msg) {
             if (reResponse.test(msg)) {
@@ -118,12 +118,11 @@ describe('iceman connection handshake', function() {
                 responseCount += 1;
 
                 // test the response is ok
-                assert(reResponse.test(msg), 'Did not receive a response from the server');
                 assert.equal(RegExp.$1, 200, 'Did not receive a 200 OK');
 
                 // if we've had two responses we are done
                 if (responseCount >= 2) {
-                    client.removeListener('done', handleResponse);
+                    client.removeAllListeners('data');
                     client.close();
                     done();
                 }
@@ -134,8 +133,6 @@ describe('iceman connection handshake', function() {
 
         });
 
-        client.on('connection', function() {
-            client.write('A:' + roomToken);
-        });
+        client.write('A:' + roomToken);
     });
 });

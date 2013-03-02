@@ -20,12 +20,13 @@ describe('simple load tests', function() {
         server = simpleServer(done);
     });
 
-    after(function() {
+    after(function(done) {
         clients.forEach(function(client) {
             client.close();
         });
         
         server.close();
+        process.nextTick(done);
     });
 
     it('should be able to create 100 clients and connect them to the server', function(done) {
