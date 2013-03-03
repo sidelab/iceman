@@ -1,0 +1,1 @@
+require('./template/store')('memory', require('../lib/stores/memory'));
