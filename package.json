@@ -15,6 +15,7 @@
     "async": "0.2.x",
     "debug": "*",
     "lodash": "1.0.x",
+    "icy": "0.2.x",
     "msgpack-js": "0.1.x",
     "sockjs": "0.3.x",
     "through": "2.2.x",
