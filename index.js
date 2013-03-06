@@ -16,7 +16,7 @@ var async = require('async'),
 
     // initialise the default transports
     defaultTransports = {
-        sockjs: {}
+        ws: {}
     };
 
 /**
@@ -49,6 +49,9 @@ var iceman = module.exports = function(opts, callback) {
 
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
+
+    // initialise the server rooms
+    server.rooms = {};
 
     // create the additional handlers array
     server._handlers = basePlugins.concat(opts.plugins || []);
@@ -84,9 +87,6 @@ var iceman = module.exports = function(opts, callback) {
 
     return server;
 };
-
-// bind the errors into the export
-iceman.errors = require('./lib/errors');
 
 /* internal helpers */
 

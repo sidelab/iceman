@@ -1,9 +1,10 @@
 var assert = require('assert'),
-    sjsc = require('sockjs-client'),
+    debug = require('debug')('iceman-test'),
     WebSocket = require('ws'),
+    websocket = require('websocket-stream'),
     request = require('supertest'),
     app = 'http://localhost:3090',
-    icystream = require('icy').stream,
+    icy = require('icy'),
     iceman = require('../'),
     uuid = require('node-uuid'),
     roomId = uuid.v4(),
@@ -11,7 +12,8 @@ var assert = require('assert'),
     reEvent = /^E\:/,
     roomToken,
     server,
-    client;
+    client,
+    socket;
 
 describe('iceman connection handshake', function() {
     before(function(done) {
@@ -73,15 +75,46 @@ describe('iceman connection handshake', function() {
     });
 
     it('should be able to connect via sockjs to the server', function(done) {
-        client = sjsc.create(app + '/room');
+        socket = new WebSocket('ws://localhost:3090/room');
 
-        client.on('connection', function() {
-            client.close();
+        socket.on('open', function() {
+            socket.close();
+
             done();
+        })
+    });
+
+    it('should be able to join a room via a websocket', function(done) {
+        var socket = websocket(new WebSocket('ws://localhost:3090/'));
+
+        socket.on('open', function() {
+            debug('creating client');
+            client = icy.client();
+
+            // piping magic
+            client
+                .pipe(icy.upstream(client))
+                .pipe(socket)
+                .pipe(icy.downstream(client))
+                .pipe(client);
+
+            client.once('joinok', function() {
+                done();
+            });
+
+            // join the test room
+            client.join(roomId);
         });
     });
 
     it('should not be able to post messages prior to authenticating with the token', function(done) {
+
+
+        // client.sendText('hi');
+
+        /*
+        client = new WebSocket('ws://localhost:3090/room');
+
         client = sjsc.create(app + '/room');
 
         client.once('data', function(msg) {
@@ -97,8 +130,10 @@ describe('iceman connection handshake', function() {
         client.on('connection', function() {
             client.write('0Thi');
         });
+        */
     });
 
+    /*
     it('should be able to auth to the room using the room token', function(done) {
         client = sjsc.create(app + '/room');
 
@@ -117,6 +152,8 @@ describe('iceman connection handshake', function() {
         });
     });
 
+    */
+    
     /*
     it('should be able to send messages once authenticated', function(done) {
         var responseCount = 0;
