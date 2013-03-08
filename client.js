@@ -1,9 +1,17 @@
 var EventEmitter = require('events').EventEmitter,
     Chat = require('chat'),
     http = require('http-browserify'),
+    wsstream = require('websocket-stream'),
     url = require('url'),
     util = require('util'),
     _ = require('lodash');
+
+module.exports = function(opts) {
+    // create a new iceman client
+    return new IceManClient(opts);
+};
+
+/* IceManClient */
 
 function IceManClient(opts) {
     EventEmitter.call(this);
@@ -32,8 +40,22 @@ IceManClient.prototype.join = function(roomId, opts) {
         });
 
     this.request(requestOpts, function(err, res, body) {
-        console.log(body);
+        if (err) return client.emit('error', err);
+
+        // if we have a token, then kick into phase two
+        if (body && body.token) {
+            // create the chat instance
+            client.token = body.token;
+            client.chat = new Chat({ token: body.token });
+
+            // check for websocket support
+            if (typeof WebSocket != 'undefined') {
+                client._wsConnect();
+            }
+        }
     });
+
+    return this;
 };
 
 /**
@@ -58,8 +80,6 @@ IceManClient.prototype.request = function(opts, callback) {
         res.on('end', function() {
             var data = lines.join('');
 
-            console.log(res);
-
             try {
                 data = JSON.parse(data);
             }
@@ -72,8 +92,25 @@ IceManClient.prototype.request = function(opts, callback) {
     }).end();
 };
 
-module.exports = function(opts) {
-    // create a new iceman client
-    return new IceManClient(opts);
+/**
+## send(data)
+*/
+IceManClient.prototype.send = function(data) {
+    if (! this.chat) return;
+
+    this.chat.send(data);
 };
 
+/**
+## _wsConnect
+*/
+IceManClient.prototype._wsConnect = function() {
+    var client = this,
+        stream = wsstream('ws://' + this.host + ':' + this.port + '/t/' + (this.token || ''));
+
+    stream.on('open', function() {
+        stream.pipe(this.chat.createStream()).pipe(stream);
+        console.log('websocket connection opened');
+        client.emit('join');
+    });
+};
