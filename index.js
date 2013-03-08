@@ -39,9 +39,6 @@ var iceman = module.exports = function(opts, callback) {
     // initialise the transports
     opts.transports = opts.transports || defaultTransports;
 
-    // create the storage initializer
-    storageInitializer = opts.storage || require('./lib/stores/memory');
-
     // create the server
     debug('initializing ice server on port: ' + opts.port);
     server = require(opts.https ? 'https' : 'http').createServer();
@@ -50,8 +47,9 @@ var iceman = module.exports = function(opts, callback) {
     // initialise the logger
     server.logger = opts.logger || require('./lib/dummy-logger');
 
-    // initialise the server rooms
+    // initialise the server tokens and rooms memory stores
     server.rooms = {};
+    server.tokens = {};
 
     // create the additional handlers array
     server._handlers = basePlugins.concat(opts.plugins || []);
@@ -67,14 +65,6 @@ var iceman = module.exports = function(opts, callback) {
     // create the initializers list
     initializers = [].map(function(taskModule) {
         return require('./lib/' + taskModule).init.bind(null, server, opts);
-    });
-
-    // add the storage initialization to the initialization tasks
-    initializers.push(function(callback) {
-        storageInitializer(server, opts, function(err, storage) {
-            server.storage = storage;
-            callback.apply(this, arguments);
-        });
     });
 
     // run the initialization tasks and then get the server running
