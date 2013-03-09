@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "async": "0.2.x",
-    "chat": "0.0.x",
+    "chat": "0.1.x",
     "debug": "*",
     "http-browserify": "0.1.x",
     "lodash": "1.0.x",
