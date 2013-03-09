@@ -34,6 +34,7 @@ util.inherits(IceManClient, EventEmitter);
 */
 IceManClient.prototype.join = function(roomId, opts) {
     var client = this,
+        chat,
         requestOpts = _.extend({}, opts, {
             method: 'POST',
             path:   '/connect/' + roomId
@@ -45,8 +46,13 @@ IceManClient.prototype.join = function(roomId, opts) {
         // if we have a token, then kick into phase two
         if (body && body.token) {
             // create the chat instance
+            chat = client.chat = new Chat();
+            chat.on('join', client.emit.bind(client, 'join'));
+            chat.on('message', client.emit.bind(client, 'message'));
+
+            // save the token and user details
             client.token = body.token;
-            client.chat = new Chat({ token: body.token });
+            client.user = body.user;
 
             // check for websocket support
             if (typeof WebSocket != 'undefined') {
@@ -108,9 +114,11 @@ IceManClient.prototype._wsConnect = function() {
     var client = this,
         stream = wsstream('ws://' + this.host + ':' + this.port + '/t/' + (this.token || ''));
 
-    stream.on('open', function() {
-        stream.pipe(this.chat.createStream()).pipe(stream);
+    stream.ws.onopen = function() {
         console.log('websocket connection opened');
-        client.emit('join');
-    });
+        stream.pipe(client.chat.createStream()).pipe(stream);
+
+        // identify ourselves to the chat instance
+        client.chat.identify(client.token, client.user);
+    };
 };
