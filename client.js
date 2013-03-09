@@ -1,6 +1,6 @@
 var EventEmitter = require('events').EventEmitter,
     Chat = require('chat'),
-    http = require('http-browserify'),
+    http = require('http'),
     wsstream = require('websocket-stream'),
     url = require('url'),
     util = require('util'),
@@ -25,6 +25,9 @@ function IceManClient(opts) {
     // initialise the host and port
     this.host = opts.hostname || opts.host;
     this.port = opts.port;
+
+    // allow the client to specify a socket creator method
+    this.createSocket = opts.createSocket;
 }
 
 util.inherits(IceManClient, EventEmitter);
@@ -38,7 +41,8 @@ IceManClient.prototype.join = function(roomId, opts) {
         requestOpts = _.extend({}, opts, {
             method: 'POST',
             path:   '/connect/' + roomId
-        });
+        }),
+        socketUrl;
 
     this.request(requestOpts, function(err, res, body) {
         if (err) return client.emit('error', err);
@@ -48,15 +52,25 @@ IceManClient.prototype.join = function(roomId, opts) {
             // create the chat instance
             room = client.room = new Chat();
             room.on('join', client.emit.bind(client, 'join'));
+            room.on('leave', client.emit.bind(client, 'leave'));
             room.on('message', client.emit.bind(client, 'message'));
 
             // save the token and user details
             client.token = body.token;
             client.user = body.user;
 
+            // emit the open event
+            client.emit('open');
+
+            // initialise the socket url
+            socketUrl = 'ws://' + client.host + ':' + client.port + '/t/' + (client.token || '');
+
             // check for websocket support
+            if (typeof client.createSocket == 'function') {
+                client._wsConnect(client.createSocket(socketUrl));
+            }
             if (typeof WebSocket != 'undefined') {
-                client._wsConnect();
+                client._wsConnect(socketUrl);
             }
         }
     });
@@ -110,9 +124,9 @@ IceManClient.prototype.send = function(data) {
 /**
 ## _wsConnect
 */
-IceManClient.prototype._wsConnect = function() {
+IceManClient.prototype._wsConnect = function(socket) {
     var client = this,
-        stream = wsstream('ws://' + this.host + ':' + this.port + '/t/' + (this.token || ''));
+        stream = wsstream(socket);
 
     stream.ws.onopen = function() {
         var roomStream = client.room.createStream();
