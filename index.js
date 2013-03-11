@@ -78,6 +78,8 @@ var iceman = module.exports = function(opts, callback) {
     return server;
 };
 
+iceman.client = require('./client');
+
 /* internal helpers */
 
 function createRequestHandler(server, opts) {

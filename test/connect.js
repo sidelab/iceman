@@ -4,9 +4,8 @@ var assert = require('assert'),
     websocket = require('websocket-stream'),
     request = require('supertest'),
     app = 'http://localhost:3090',
-    icy = require('icy'),
     iceman = require('../'),
-    uuid = require('node-uuid'),
+    uuid = require('uuid'),
     roomId = uuid.v4(),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:/,
@@ -32,7 +31,7 @@ describe('iceman connection handshake', function() {
             .end(done);
     });
 
-    it('shoudl return a 500 response when an error occurs during authentication', function(done) {
+    it('should return a 500 response when an error occurs during authentication', function(done) {
         server.once('auth', function(req, res, callback) {
             callback(new Error('Could not do something...'));
         });
@@ -74,7 +73,7 @@ describe('iceman connection handshake', function() {
             });
     });
 
-    it('should be able to connect via sockjs to the server', function(done) {
+    it('should be able to connect via websockets to the server', function(done) {
         socket = new WebSocket('ws://localhost:3090/room');
 
         socket.on('open', function() {
@@ -84,27 +83,10 @@ describe('iceman connection handshake', function() {
         })
     });
 
-    it('should be able to join a room via a websocket', function(done) {
-        var socket = websocket(new WebSocket('ws://localhost:3090/'));
+    it('should be able to connect via the iceman client', function(done) {
+        var client = iceman.client('http://localhost:3090');
 
-        socket.on('open', function() {
-            debug('creating client');
-            client = icy.client();
-
-            // piping magic
-            client
-                .pipe(icy.upstream(client))
-                .pipe(socket)
-                .pipe(icy.downstream(client))
-                .pipe(client);
-
-            client.once('joinok', function() {
-                done();
-            });
-
-            // join the test room
-            client.join(roomId);
-        });
+        client.join('testroom');
     });
 
     it('should not be able to post messages prior to authenticating with the token', function(done) {

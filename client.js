@@ -1,5 +1,6 @@
-var EventEmitter = require('events').EventEmitter,
-    Chat = require('chat'),
+var debug = require('debug')('iceman-client'),
+    EventEmitter = require('events').EventEmitter,
+    chat = require('chat'),
     http = require('http'),
     wsstream = require('websocket-stream'),
     url = require('url'),
@@ -21,6 +22,9 @@ function IceManClient(opts) {
     if (typeof opts == 'string' || (opts instanceof String)) {
         opts = url.parse(opts);
     }
+
+    // initailise the chat client
+    this.chat = null;
 
     // initialise the host and port
     this.host = opts.hostname || opts.host;
@@ -49,18 +53,8 @@ IceManClient.prototype.join = function(roomId, opts) {
 
         // if we have a token, then kick into phase two
         if (body && body.token) {
-            // create the chat instance
-            room = client.room = new Chat();
-            room.on('join', client.emit.bind(client, 'join'));
-            room.on('leave', client.emit.bind(client, 'leave'));
-            room.on('message', client.emit.bind(client, 'message'));
-
-            // save the token and user details
+            // save the token
             client.token = body.token;
-            client.user = body.user;
-
-            // emit the open event
-            client.emit('open');
 
             // initialise the socket url
             socketUrl = 'ws://' + client.host + ':' + client.port + '/t/' + (client.token || '');
@@ -113,12 +107,12 @@ IceManClient.prototype.request = function(opts, callback) {
 };
 
 /**
-## send(data)
+## write(data)
 */
-IceManClient.prototype.send = function(data) {
-    if (! this.room) return;
+IceManClient.prototype.write = function(data) {
+    if (! this.chat) return;
 
-    this.room.send(data);
+    this.chat.write(data);
 };
 
 /**
@@ -129,15 +123,11 @@ IceManClient.prototype._wsConnect = function(socket) {
         stream = wsstream(socket);
 
     stream.ws.onopen = function() {
-        var roomStream = client.room.createStream();
-        console.log('websocket connection opened');
-        stream.pipe(roomStream).pipe(stream);
+        debug('websocket connection opened, creating client');
 
-        roomStream.once('sync', function() {
-            console.log('synced, identifying user');
-
-            // identify ourselves to the chat instance
-            client.room.identify(client.token, client.user);
-        });
+        // create the client
+        client.chat = chat.client(stream, { token: client.token });
+        client.chat.on('ready', client.emit.bind(client, 'ready'));
+        client.chat.on('data', client.emit.bind(client, 'data'));
     };
 };
