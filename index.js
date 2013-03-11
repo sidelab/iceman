@@ -79,6 +79,7 @@ var iceman = module.exports = function(opts, callback) {
 };
 
 iceman.client = require('./client');
+iceman.bot = require('./bot');
 
 /* internal helpers */
 
