@@ -58,6 +58,7 @@ IceManClient.prototype.join = function(roomId, opts) {
 
             // initialise the socket url
             socketUrl = 'ws://' + client.host + ':' + client.port + '/t/' + (client.token || '');
+            debug('received authentication token, attempting to connect to ws endpoint: ' + socketUrl);
 
             // check for websocket support
             if (typeof client.createSocket == 'function') {
