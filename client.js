@@ -128,7 +128,12 @@ IceManClient.prototype._wsConnect = function(socket) {
 
         // create the client
         client.chat = chat.client(stream, { token: client.token });
-        client.chat.on('ready', client.emit.bind(client, 'ready'));
         client.chat.on('data', client.emit.bind(client, 'data'));
+
+        client.chat.once('ready', function() {
+            // copy the cid from the chat instance to the client
+            client.cid = client.chat.cid;
+            client.emit('ready');
+        });
     };
 };
