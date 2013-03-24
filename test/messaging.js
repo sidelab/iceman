@@ -40,54 +40,50 @@ describe('iceman messaging', function() {
     });
 
     it('should be able to send a message from client 1', function(done) {
-        server.storage.findRoom(roomId, function(err, room) {
-            if (err) return done(err);
+        var room = server.rooms[roomId];
 
-            room.stream.once('data', function(msg, client) {
-                assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+        room.once('message', function(msg) {
+            assert.equal(msg.data, 'hi');
+            assert.equal(msg.cid, clients[0].cid);
 
-                done();
-            });
-
-            clients[0].write('T:hi');
+            done();
         });
+
+        clients[0].write('hi');
     });
 
     it('should be able to send a message from client 2', function(done) {
-        server.storage.findRoom(roomId, function(err, room) {
-            if (err) return done(err);
+        var room = server.rooms[roomId];
 
-            room.stream.once('data', function(msg, client) {
-                assert.equal(getClientId(msg), client.id, 'Message id does not match client');
+        room.once('message', function(msg) {
+            assert.equal(msg.data, 'ho');
+            assert.equal(msg.cid, clients[1].cid);
 
-                done();
-            });
-
-            clients[1].write('T:hi');
+            done();
         });
+
+        clients[1].write('ho');
     });
 
     it('should be able to send a message from client 1 to client 2', function(done) {
-        clients[1].on('data', function handleData(msg) {
-            console.log(msg);
-            if (reSayHi.test(msg)) {
-                clients[1].removeListener('data', handleData);
-                done();
-            }
+        clients[1].once('data', function(msg) {
+            assert.equal(msg.data, 'hi');
+            assert.equal(msg.cid, clients[0].cid);
+
+            done();
         });
 
-        clients[0].write('T:hi');
+        clients[0].write('hi');
     });
 
     it('should be able to send a message from client 2 to client 1', function(done) {
         clients[0].on('data', function handleData(msg) {
-            console.log(msg);
-            if (reSayHi.test(msg)) {
-                clients[1].removeListener('data', handleData);
-                done();
-            }
+            assert.equal(msg.data, 'ho');
+            assert.equal(msg.cid, clients[1].cid);
+
+            done();
         });
 
-        clients[1].write('T:hi');
+        clients[1].write('ho');
     });
 });

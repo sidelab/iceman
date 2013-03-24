@@ -2,6 +2,7 @@ var assert = require('assert'),
     request = require('supertest'),
     app = 'http://localhost:3090',
     iceman = require('../'),
+    randomName = require('random-name'),
     uuid = require('uuid'),
     roomId = uuid.v4(),
     reResponse = /^R\:(\d+)\|?(.*)/,
@@ -13,6 +14,11 @@ var assert = require('assert'),
 describe('iceman events', function() {
     before(function(done) {
         server = iceman(done);
+
+        // attach an auth handler
+        server.on('auth', function(req, res, callback) {
+            callback(null, { nick: randomName().replace(/\s/g, '') });
+        });
     });
 
     after(function(done) {
@@ -21,10 +27,6 @@ describe('iceman events', function() {
     });
 
     it('should return a 200 response when a user is provided', function(done) {
-        server.once('auth', function(req, res, callback) {
-            callback(null, { nick: 'Test' });
-        });
-
         request(app)
             .get('/connect/' + roomId)
             .expect(200)
@@ -41,39 +43,31 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.enter event from the server', function(done) {
-        server.storage.findRoom(roomId, function(err, room) {
-            var stream = (room || {}).stream;
+        var room = server.rooms[roomId],
+            client = iceman.bot('http://localhost:3090/');
 
-            if (err) return done(err);
-
-            stream.on('data', function handleMessages(msg) {
-                if (reEvent.test(msg) && RegExp.$1.split('|')[0] === 'user.enter') {
-                    stream.removeListener('data', handleMessages);
-                    done();
-                }
-            });
-
-            client = sjsc.create(app + '/room');
-            client.on('connection', function() {
-                client.write('A:' + roomToken);
-            });
+        room.on('message', function handleMessage(msg) {
+            if (msg.type === 'USERJOIN') {
+                room.removeListener('message', handleMessage);
+                done();
+            }
         });
+
+        client.join(roomId);
     });
 
     it('should be able to get a user.exit event from the server on connection close', function(done) {
-        server.storage.findRoom(roomId, function(err, room) {
-            var stream = (room || {}).stream;
+        var room = server.rooms[roomId],
+            client = iceman.bot('http://localhost:3090/');
 
-            if (err) return done(err);
+        room.on('message', function handleMessage(msg) {
+            if (msg.type === 'USERLEAVE') {
+                room.removeListener('message', handleMessage);
+                done();
+            }
+        });
 
-            stream.on('data', function handleMessages(msg) {
-                if (reEvent.test(msg)) {
-                    assert.equal(RegExp.$1.split('|')[0], 'user.exit');
-                    stream.removeListener('data', handleMessages);
-                    done();
-                }
-            });
-
+        client.join(roomId).once('ready', function() {
             process.nextTick(client.close.bind(client));
         });
     });

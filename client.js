@@ -23,8 +23,8 @@ function IceManClient(opts) {
         opts = url.parse(opts);
     }
 
-    // initailise the chat client
-    this.chat = null;
+    // initailise the chat stream
+    this.stream = null;
 
     // initialise the host and port
     this.host = opts.hostname || opts.host;
@@ -35,6 +35,15 @@ function IceManClient(opts) {
 }
 
 util.inherits(IceManClient, EventEmitter);
+
+/**
+## close()
+*/
+IceManClient.prototype.close = function() {
+    if (this.stream && typeof this.stream.end == 'function') {
+        this.stream.end();
+    }
+};
 
 /**
 ## join(roomId)
@@ -111,9 +120,9 @@ IceManClient.prototype.request = function(opts, callback) {
 ## write(data)
 */
 IceManClient.prototype.write = function(data) {
-    if (! this.chat) return;
+    if (! this.stream) return;
 
-    this.chat.write(data);
+    this.stream.write(data);
 };
 
 /**
@@ -127,12 +136,12 @@ IceManClient.prototype._wsConnect = function(socket) {
         debug('websocket connection opened, creating client');
 
         // create the client
-        client.chat = chat.client(stream, { token: client.token });
-        client.chat.on('data', client.emit.bind(client, 'data'));
+        client.stream = chat.client(stream, { token: client.token });
+        client.stream.on('data', client.emit.bind(client, 'data'));
 
-        client.chat.once('ready', function() {
+        client.stream.once('ready', function() {
             // copy the cid from the chat instance to the client
-            client.cid = client.chat.cid;
+            client.cid = client.stream.cid;
             client.emit('ready');
         });
     };
