@@ -1,6 +1,5 @@
 var assert = require('assert'),
     debug = require('debug')('iceman-test'),
-    sjsc = require('sockjs-client'),
     request = require('supertest'),
     app = 'http://localhost:3090',
     reResponse = /^R\:(\d+)\|?(.*)/;

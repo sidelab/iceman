@@ -1,5 +1,5 @@
 var assert = require('assert'),
-	uuid = require('node-uuid'),
+	uuid = require('uuid'),
 	Stream = require('stream');
 
 module.exports = function(storeType, initializer) {
