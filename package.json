@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "async": "0.2.x",
-    "chat": "0.4.x",
+    "chat": "0.5.x",
     "debug": "*",
     "http-browserify": "0.1.x",
     "lodash": "1.0.x",
@@ -22,9 +22,7 @@
     "uuid": "1.4.x"
   },
   "devDependencies": {
-    "browserify": "2.4.x",
-    "browservefy": "*",
-    "mocha": "1.8.x",
+    "mocha": "1.9.x",
     "random-name": "0.1.x",
     "supertest": "0.5.x"
   },
