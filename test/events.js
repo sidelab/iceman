@@ -1,6 +1,7 @@
 var assert = require('assert'),
     request = require('supertest'),
     app = 'http://localhost:3090',
+    http = require('http'),
     iceman = require('../'),
     randomName = require('random-name'),
     uuid = require('uuid'),
@@ -8,21 +9,23 @@ var assert = require('assert'),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:(.*)$/,
     roomToken,
-    server,
+    ice,
     client;
 
 describe('iceman events', function() {
     before(function(done) {
-        server = iceman(done);
+        ice = iceman(http.createServer());
 
         // attach an auth handler
-        server.on('auth', function(req, res, callback) {
+        ice.on('auth', function(req, res, callback) {
             callback(null, { nick: randomName().replace(/\s/g, '') });
         });
+
+        ice.server.listen(3090, done);
     });
 
     after(function(done) {
-        server.close();
+        ice.server.close();
         process.nextTick(done);
     });
 
@@ -43,7 +46,7 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.enter event from the server', function(done) {
-        var room = server.rooms[roomId],
+        var room = ice.rooms[roomId],
             client = iceman.bot('http://localhost:3090/');
 
         room.on('message', function handleMessage(msg) {
@@ -57,7 +60,7 @@ describe('iceman events', function() {
     });
 
     it('should be able to get a user.exit event from the server on connection close', function(done) {
-        var room = server.rooms[roomId],
+        var room = ice.rooms[roomId],
             client = iceman.bot('http://localhost:3090/');
 
         room.on('message', function handleMessage(msg) {

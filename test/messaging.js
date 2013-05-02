@@ -11,7 +11,7 @@ var assert = require('assert'),
     reSayHi = /^(\d+)T\:hi$/,
     roomToken,
     clients,
-    server;
+    ice;
 
 function getClientId(msg) {
     return reLeadingDigit.test(msg) && RegExp.$1;
@@ -19,7 +19,7 @@ function getClientId(msg) {
 
 describe('iceman messaging', function() {
     before(function(done) {
-        server = simpleServer(function(err) {
+        ice = simpleServer(function(err) {
             if (err) return done(err);
 
             // create two clients
@@ -35,12 +35,12 @@ describe('iceman messaging', function() {
             client.close();
         });
         
-        server.close();
+        ice.server.close();
         process.nextTick(done);
     });
 
     it('should be able to send a message from client 1', function(done) {
-        var room = server.rooms[roomId];
+        var room = ice.rooms[roomId];
 
         room.once('message', function(msg) {
             assert.equal(msg.data, 'hi');
@@ -53,7 +53,7 @@ describe('iceman messaging', function() {
     });
 
     it('should be able to send a message from client 2', function(done) {
-        var room = server.rooms[roomId];
+        var room = ice.rooms[roomId];
 
         room.once('message', function(msg) {
             assert.equal(msg.data, 'ho');

@@ -1,5 +1,6 @@
 var assert = require('assert'),
     debug = require('debug')('iceman-test'),
+    http = require('http'),
     WebSocket = require('ws'),
     websocket = require('websocket-stream'),
     request = require('supertest'),
@@ -10,17 +11,18 @@ var assert = require('assert'),
     reResponse = /^R\:(\d+)\|?(.*)/,
     reEvent = /^E\:/,
     roomToken,
-    server,
+    ice,
     client,
     socket;
 
 describe('iceman connection handshake', function() {
     before(function(done) {
-        server = iceman(done);
+        ice = iceman(http.createServer());
+        ice.server.listen(3090, done);
     });
 
     after(function(done) {
-        server.close();
+        ice.server.close();
         process.nextTick(done);
     });
 
@@ -32,7 +34,7 @@ describe('iceman connection handshake', function() {
     });
 
     it('should return a 500 response when an error occurs during authentication', function(done) {
-        server.once('auth', function(req, res, callback) {
+        ice.once('auth', function(req, res, callback) {
             callback(new Error('Could not do something...'));
         });
 
@@ -43,7 +45,7 @@ describe('iceman connection handshake', function() {
     });
 
     it('should return a 401 response when authentication fails', function(done) {
-        server.once('auth', function(req, res, callback) {
+        ice.once('auth', function(req, res, callback) {
             callback();
         });
 
@@ -54,7 +56,7 @@ describe('iceman connection handshake', function() {
     });
 
     it('should return a 200 response when a user is provided', function(done) {
-        server.once('auth', function(req, res, callback) {
+        ice.once('auth', function(req, res, callback) {
             callback(null, { nick: 'Test' });
         });
 
@@ -86,7 +88,7 @@ describe('iceman connection handshake', function() {
     it('should be able to connect via the iceman client', function(done) {
         var client = iceman.bot('http://localhost:3090');
 
-        server.once('auth', function(req, res, callback) {
+        ice.once('auth', function(req, res, callback) {
             callback(null, { nick: 'Test' });
         });
 

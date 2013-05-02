@@ -1,17 +1,19 @@
 var iceman = require('../../'),
     randomName = require('random-name'),
-    server;
+    http = require('http');
 
 module.exports = function(callback) {
-    // create the server
-    server = iceman(callback);
+    var ice = iceman(http.createServer());
 
     // add authentication helper
-    server.on('auth', function(req, res, callback) {
+    ice.on('auth', function(req, res, callback) {
         callback(null, {
             nick: randomName().replace(/\s/g, '')
         });
     });
 
-    return server;
+    // sart the server
+    ice.server.listen(3090, callback);
+
+    return ice;
 };

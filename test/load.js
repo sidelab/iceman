@@ -12,12 +12,12 @@ var assert = require('assert'),
     reSayHi = /^(\d+)T\:hi$/,
     roomToken,
     clients = [],
-    server;
+    ice;
 
 describe('simple load tests', function() {
     before(function(done) {
         http.globalAgent.maxSockets = 200;
-        server = simpleServer(done);
+        ice = simpleServer(done);
     });
 
     after(function(done) {
@@ -25,7 +25,7 @@ describe('simple load tests', function() {
             client.close();
         });
         
-        server.close();
+        ice.server.close();
         process.nextTick(done);
     });
 

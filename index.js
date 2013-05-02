@@ -2,6 +2,8 @@ var async = require('async'),
     debug = require('debug')('iceman-server'),
     path = require('path'),
     http = require('http'),
+    util = require('util'),
+    EventEmitter = require('events').EventEmitter,
     _ = require('lodash'),
 
     // include the plugins
@@ -19,49 +21,89 @@ var async = require('async'),
         ws: {}
     };
 
-/**
-*/
-var iceman = module.exports = function(opts, callback) {
-    var server, transports = [], initializers,
-        storageInitializer;
+function Ice(server, options) {
+    // ensure we have default opts
+    var opts = options || {};
 
-    if (typeof opts == 'function') {
-        callback = opts;
-        opts = {};
-    }
-
-    // ensure we have opts
-    opts = opts || {};
-
-    // initialise the default port
-    opts.port = opts.port || 3090;
+    // bind to the http server
+    this.server = server;
 
     // initialise the transports
-    opts.transports = opts.transports || defaultTransports;
+    this.transports = opts.transports || defaultTransports;
 
-    // create the server
-    debug('initializing ice server on port: ' + opts.port);
-    server = require(opts.https ? 'https' : 'http').createServer();
-    server.on('request', createRequestHandler(server, opts));
+    // create the logger
+    this.logger = opts.logger || require('./lib/dummy-logger');
 
-    // initialise the logger
-    server.logger = opts.logger || require('./lib/dummy-logger');
+    // initialise the default handlers
+    this._handlers = basePlugins.concat(opts.plugins || []);
 
-    // initialise the server tokens and rooms memory stores
-    server.rooms = {};
-    server.tokens = {};
+    // initialise rooms and tokens
+    this.rooms = {};
+    this.tokens = {};
 
-    // create the additional handlers array
-    server._handlers = basePlugins.concat(opts.plugins || []);
-    server.use = function(handler) {
-        server._handlers.push(handler);
-    };
+    // handle requests
+    this.server.on('request', this._handleRequest.bind(this));
+
+    // initialise
+    this._init();
+}
+
+util.inherits(Ice, EventEmitter);
+
+/**
+## use(handler)
+
+Add the handler function to ice server handling
+*/
+Ice.prototype.use = function(handler) {
+    this._handlers.push(handler);
+
+    return this;
+};
+
+/**
+## _handleRequest
+
+*/
+Ice.prototype._handleRequest = function(req, res) {
+    // initialise the plugin handlers
+    var ice = this,
+        handlers = this._handlers.map(function(plugin) {
+            return plugin.bind(null, req, res);
+        });
+
+    // add the route regex handlers
+    handlers = handlers.concat(routes.map(function(route) {
+        return function(callback) {
+            var match = route.regex.exec(req.url);
+
+            // if this is not a match, then immediately trigger the callback
+            if (! match) return callback();
+
+            // run the route handler
+            route.handler.call(ice, match, req, res, callback);
+        };
+    }));
+
+    // run the plugins in series
+    async.series(handlers, function(err) {
+    });
+};
+
+/**
+## _init()
+*/
+Ice.prototype._init = function() {
+    var ice = this;
 
     // iterate through the transports
-    _.each(opts.transports, function(config, transport) {
-        transports.push(require('./lib/transports/' + transport)(server, config));
+    debug('initializing ice');
+    _.each(this.transports, function(config, transport) {
+        debug('transport: ' + transport);
+        require('./lib/transports/' + transport).call(ice, config);
     });
 
+    /*
     // create the initializers list
     initializers = [].map(function(taskModule) {
         return require('./lib/' + taskModule).init.bind(null, server, opts);
@@ -74,39 +116,14 @@ var iceman = module.exports = function(opts, callback) {
         // run the server
         server.listen(opts.port, callback);
     });
+    */
+};
 
-    return server;
+/**
+*/
+var iceman = module.exports = function(server, options) {
+    return new Ice(server, options);
 };
 
 iceman.client = require('./client');
 iceman.bot = require('./bot');
-
-/* internal helpers */
-
-function createRequestHandler(server, opts) {
-    opts = opts || {};
-
-    return function(req, res) {
-        // initialise the plugin handlers
-        var handlers = server._handlers.map(function(plugin) {
-            return plugin.bind(null, req, res);
-        });
-
-        // add the route regex handlers
-        handlers = handlers.concat(routes.map(function(route) {
-            return function(callback) {
-                var match = route.regex.exec(req.url);
-
-                // if this is not a match, then immediately trigger the callback
-                if (! match) return callback();
-
-                // run the route handler
-                route.handler.call(null, match, server, req, res, callback);
-            };
-        }));
-
-        // run the plugins in series
-        async.series(handlers, function(err) {
-        });
-    };
-}
