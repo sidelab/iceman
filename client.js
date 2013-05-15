@@ -56,6 +56,7 @@ IceManClient.prototype.join = function(roomId, opts) {
             method: 'POST',
             path:   '/connect/' + roomId
         }),
+        protocol = requestOpts.protocol === 'https:' ? 'wss:' : 'ws:',
         socketUrl;
 
     this.request(requestOpts, function(err, res, body) {
@@ -67,7 +68,7 @@ IceManClient.prototype.join = function(roomId, opts) {
             client.token = body.token;
 
             // initialise the socket url
-            socketUrl = 'ws://' + client.host + ':' + client.port + '/t/' + (client.token || '');
+            socketUrl = protocol + '//' + client.host + ':' + client.port + '/t/' + (client.token || '');
             debug('received authentication token, attempting to connect to ws endpoint: ' + socketUrl);
 
             // check for websocket support
