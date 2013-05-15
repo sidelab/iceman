@@ -30,6 +30,7 @@ function IceManClient(opts) {
     // initialise the host and port
     this.host = opts.hostname || opts.host;
     this.port = opts.port;
+    this.secure = opts.secure || opts.protocol === 'https:';
 
     // allow the client to specify a socket creator method
     this.createSocket = opts.createSocket;
@@ -56,7 +57,7 @@ IceManClient.prototype.join = function(roomId, opts) {
             method: 'POST',
             path:   '/connect/' + roomId
         }),
-        protocol = requestOpts.protocol === 'https:' ? 'wss:' : 'ws:',
+        protocol = this.secure ? 'wss:' : 'ws:',
         socketUrl;
 
     this.request(requestOpts, function(err, res, body) {
@@ -91,7 +92,7 @@ IceManClient.prototype.request = function(opts, callback) {
     var client = this,
         lines = [],
         req,
-        iface = opts.protocol === 'https:' ? https : http;
+        iface = this.secure ? https : http;
 
     // add the host and port to the opts
     opts = _.extend({
