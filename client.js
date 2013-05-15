@@ -2,6 +2,7 @@ var debug = require('debug')('iceman-client'),
     EventEmitter = require('events').EventEmitter,
     chat = require('chat'),
     http = require('http'),
+    https = require('https'),
     wsstream = require('websocket-stream'),
     url = require('url'),
     util = require('util'),
@@ -88,7 +89,8 @@ IceManClient.prototype.join = function(roomId, opts) {
 IceManClient.prototype.request = function(opts, callback) {
     var client = this,
         lines = [],
-        req;
+        req,
+        iface = opts.protocol === 'https:' ? https : http;
 
     // add the host and port to the opts
     opts = _.extend({
@@ -96,7 +98,7 @@ IceManClient.prototype.request = function(opts, callback) {
         port: this.port
     }, opts);
 
-    http.request(opts, function(res) {
+    iface.request(opts, function(res) {
         res.on('data', function(line) {
             lines[lines.length] = line;
         });
